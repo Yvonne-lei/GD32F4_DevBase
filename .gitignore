@@ -6,6 +6,7 @@
 
 # project out
 /build
+/.verify_build
 /bin
 /obj
 /out
