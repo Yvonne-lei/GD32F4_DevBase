@@ -66,6 +66,34 @@ LoopFillZerobss:
   cmp r2, r4
   bcc FillZerobss
 
+/* zero fill the SRAM1 segment */
+  ldr r2, =_ssram1
+  ldr r4, =_esram1
+  movs r3, #0
+  b LoopFillZeroSram1
+
+FillZeroSram1:
+  str  r3, [r2]
+  adds r2, r2, #4
+
+LoopFillZeroSram1:
+  cmp r2, r4
+  bcc FillZeroSram1
+
+/* zero fill the CCM RAM segment */
+  ldr r2, =_sccmram
+  ldr r4, =_eccmram
+  movs r3, #0
+  b LoopFillZeroCcm
+
+FillZeroCcm:
+  str  r3, [r2]
+  adds r2, r2, #4
+
+LoopFillZeroCcm:
+  cmp r2, r4
+  bcc FillZeroCcm
+
 /* call the clock system initialization function */
   bl  SystemInit
 /* call static constructors */

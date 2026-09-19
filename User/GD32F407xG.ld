@@ -1,11 +1,18 @@
 /*!
     \file    GD32F407xG.ld
-    \brief   GNU linker script for GD32F407ZG (1024KB Flash, 128KB SRAM + 64KB CCM RAM)
+    \brief   GNU linker script for GD32F407ZG (1MB Flash, 112KB SRAM0 + 16KB SRAM1 + 64KB CCM)
 
     Memory map of GD32F407ZG:
         FLASH   : 0x0800 0000, 1024KB
-        SRAM    : 0x2000 0000, 128KB (SRAM0 112KB + SRAM1 16KB, contiguous)
-        CCM RAM : 0x1000 0000, 64KB
+        SRAM0   : 0x2000 0000, 112KB  (main RAM: .data / .bss / heap / stack)
+        SRAM1   : 0x2001 C000,  16KB  (可单独放变量，如 DMA 缓冲)
+        CCM RAM : 0x1000 0000,  64KB  (仅 CPU 可访问，速度快)
+
+    命名对照：GD32 的 SRAM1 = STM32 的 SRAM2；TCMSRAM = CCM RAM。
+
+    使用方式（把变量放进指定内存）：
+        __attribute__((section(".sram1")))   放到 SRAM1
+        __attribute__((section(".ccmram")))  放到 CCM RAM
 
     Entry point is Reset_Handler, see startup_gd32f407_427.S
 */
@@ -23,7 +30,8 @@ _Min_Stack_Size = 0x400;    /* required amount of stack */
 /* specify the memory areas */
 MEMORY
 {
-  RAM    (xrw) : ORIGIN = 0x20000000, LENGTH = 128K
+  RAM    (xrw) : ORIGIN = 0x20000000, LENGTH = 112K
+  SRAM1  (xrw) : ORIGIN = 0x2001C000, LENGTH = 16K
   CCMRAM (rw)  : ORIGIN = 0x10000000, LENGTH = 64K
   FLASH  (rx)  : ORIGIN = 0x08000000, LENGTH = 1024K
 }
@@ -149,8 +157,18 @@ SECTIONS
     . = ALIGN(8);
   } >RAM
 
-  /* CCM RAM section, variables must be placed here explicitly, e.g.
-     __attribute__((section("._ccmram"))) or __attribute__((section(".ccmram"))) */
+  /* SRAM1 section (16KB)，用 __attribute__((section(".sram1"))) 把变量放这里 */
+  ._sram1 (NOLOAD) :
+  {
+    . = ALIGN(4);
+    _ssram1 = .;
+    *(.sram1)
+    *(.sram1*)
+    . = ALIGN(4);
+    _esram1 = .;
+  } >SRAM1
+
+  /* CCM RAM section (64KB)，用 __attribute__((section(".ccmram"))) 把变量放这里 */
   ._ccmram (NOLOAD) :
   {
     . = ALIGN(4);
